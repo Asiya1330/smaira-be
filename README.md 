@@ -1,0 +1,322 @@
+# Microbiome App — Backend Project Brief
+
+## Overview
+
+This document outlines the full backend scope, database schema, scoring algorithm logic, API endpoints, and data import instructions for the Microbiome App backend (Supabase + API layer).
+
+---
+
+## Database Schema
+
+### `products` Table
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| name | text | Product name |
+| brand | text | Brand name |
+| barcode | text | Unique barcode |
+| category | text | Product category |
+| image_url | text | Product image URL |
+| score | integer | Calculated normalized score (0–100) |
+| organic | text | Yes / No |
+| certifications | text | e.g. USDA Organic, GOTS, Oeko-Tex |
+| preservatives | text | |
+| fragrance_type | text | |
+| synthetic_materials | text | |
+| bleaching_method | text | |
+| ph_level | text | |
+| source_url | text | |
+| verified | boolean | true / false |
+
+---
+
+### `ingredients` Table
+
+| Column | Type | Notes |
+|---|---|---|
+| ingredient_id | uuid | Primary key, auto-generated |
+| ingredient_name | text | Common name |
+| inci_name | text | Standardized INCI name — **critical matching key** |
+| impact_score | integer | -2 to +2 (nullable) |
+| classification | text | Beneficial / Harmful / Neutral / No Data (nullable) |
+| plain_english_summary | text | One-sentence user-facing explanation (nullable) |
+| study_title | text | Supporting clinical study title (nullable) |
+| pubmed_link | text | URL to PubMed study (nullable) |
+| year_published | integer | Year of publication (nullable) |
+| evidence_strength | text | Strong / Moderate / Weak (nullable) |
+| conflicting_evidence | text | Yes / No (nullable) |
+| notes | text | Researcher flags or additional notes (nullable) |
+
+> **Note:** `ingredient_id`, `ingredient_name`, and `inci_name` are required. All other columns are nullable pending data from the biomedical research scientist.
+
+---
+
+### `product_ingredients` Table (Linking Table)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| product_id | uuid | Foreign key → products |
+| ingredient_id | uuid | Foreign key → ingredients |
+
+---
+
+### `scoring_rules` Table
+
+| Score Range | Rating | Color |
+|---|---|---|
+| 70–100 | Microbiome Friendly | 🟢 Green |
+| 40–69 | Use With Caution | 🟡 Yellow |
+| 0–39 | Not Recommended | 🔴 Red |
+
+---
+
+### `SavedProducts` Table
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| userId | uuid | Foreign key → auth.users |
+| productId | uuid | Foreign key → products |
+| savedAt | timestamp | Auto-set on insert |
+
+---
+
+### `ProductSubmissions` Table
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key |
+| userId | uuid | Who submitted it |
+| product_name | text | |
+| brand | text | |
+| barcode | text | |
+| category | text | |
+| image_url | text | |
+| ingredients | text | Raw ingredient list |
+| submitted_at | timestamp | Auto-set on insert |
+| status | text | pending / approved / rejected (default: pending) |
+| review_notes | text | Internal team review notes |
+
+---
+
+### `flagged_ingredients` Table
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | Primary key, auto-generated |
+| product_name | text | |
+| ingredient_name | text | |
+| inci_name | text | |
+| flagged_at | timestamp | Auto-set on insert |
+| status | text | Pending / In Progress / Scored (default: Pending) |
+
+---
+
+## Scoring Algorithm
+
+### Step 1 — Barcode Scan
+
+1. User scans a barcode.
+2. API looks up barcode in the `products` table.
+3. If found → return full product data and ingredients list.
+4. If not found → fall back to **Open Beauty Facts API**.
+5. If still not found → return a prompt for user to submit via `ProductSubmissions` table.
+
+---
+
+### Step 2 — Ingredient Retrieval
+
+1. Use `product_id` to find all linked `ingredient_id` values from `product_ingredients`.
+2. Fetch each ingredient's full data from `ingredients` using `inci_name` as the matching key.
+
+---
+
+### Step 3 — Individual Ingredient Scoring
+
+For each ingredient retrieve from `ingredients`:
+- `impact_score` — integer: +2, +1, 0, -1, -2
+- `classification` — Beneficial / Harmful / Neutral / No Data
+- `plain_english_summary` — one-sentence explanation
+
+**Important rules:**
+- Ingredients with `classification = No Data` are **excluded** from score calculation and flagged separately.
+- Only ingredients with a valid `impact_score` are included.
+
+---
+
+### Step 4 — Product Score Calculation
+
+```
+raw_score = sum of all valid impact_scores
+
+maximum_possible = number_of_scored_ingredients × 2
+minimum_possible = number_of_scored_ingredients × -2
+
+normalized_score = ((raw_score - minimum_possible) / (maximum_possible - minimum_possible)) × 100
+
+final_score = round(normalized_score) → integer (0–100)
+```
+
+---
+
+### Step 5 — Rating Classification
+
+Match `final_score` against `scoring_rules`:
+
+| Score | Rating |
+|---|---|
+| 70–100 | 🟢 Microbiome Friendly |
+| 40–69 | 🟡 Use With Caution |
+| 0–39 | 🔴 Not Recommended |
+
+---
+
+### Step 6 — Store Score
+
+Save the calculated `final_score` back to the `score` column in the `products` table so future scans load instantly without recalculating.
+
+---
+
+### Step 7 — API Response to Frontend
+
+The product detail endpoint should return:
+
+```json
+{
+  "product": {
+    "name": "",
+    "brand": "",
+    "category": "",
+    "image_url": "",
+    "score": 0,
+    "rating": "Microbiome Friendly | Use With Caution | Not Recommended"
+  },
+  "ingredients": [
+    {
+      "ingredient_name": "",
+      "classification": "Beneficial | Harmful | Neutral | No Data",
+      "plain_english_summary": "",
+      "impact_score": 0
+    }
+  ],
+  "summary": {
+    "beneficial_count": 0,
+    "harmful_count": 0,
+    "neutral_count": 0,
+    "no_data_count": 0
+  }
+}
+```
+
+---
+
+## Ingredient Gap Checker
+
+### Trigger Logic
+
+Whenever a new row is inserted into the `products` table **or** a new `ProductSubmissions` entry is created:
+
+1. Check each ingredient in the product's ingredient list against the `ingredients` table using `inci_name`.
+2. Flag any ingredient where:
+   - `impact_score` is null, **or**
+   - The ingredient does not exist in the `ingredients` table.
+3. Insert flagged rows into the `flagged_ingredients` table with `status = Pending`.
+
+---
+
+## API Endpoints
+
+### 1. Barcode Scanning
+
+**`GET /api/products/scan/:barcode`**
+
+- Look up barcode in `products` table.
+- Fallback to Open Beauty Facts API if not found.
+- Return submission prompt if still not found.
+
+| Parameter | Type | Required |
+|---|---|---|
+| barcode | string | Yes |
+
+---
+
+### 2. Product Scoring
+
+**`GET /api/products/:productId/score`**
+
+- Retrieve all ingredients via `product_ingredients`.
+- Calculate normalized score using scoring algorithm.
+- Return overall score, rating classification, and full ingredient breakdown.
+
+| Parameter | Type | Required |
+|---|---|---|
+| productId | uuid | Yes |
+
+---
+
+### 3. User Authentication
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/auth/signup` | POST | Register a new user |
+| `/api/auth/login` | POST | Log in |
+| `/api/auth/logout` | POST | Log out |
+
+---
+
+### 4. Saved Products
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/saved` | GET | Get all saved products for a user |
+| `/api/saved` | POST | Save a product to user's account |
+| `/api/saved/:productId` | DELETE | Remove a saved product |
+
+---
+
+### 5. Product Submission
+
+**`POST /api/submissions`**
+
+Submits an unknown product for review. Stored in `ProductSubmissions` with `status = pending`.
+
+| Field | Type | Required |
+|---|---|---|
+| userId | uuid | Yes |
+| product_name | text | Yes |
+| brand | text | No |
+| barcode | text | Yes |
+| category | text | No |
+| image_url | text | No |
+| ingredients | text | No |
+
+---
+
+### 6. Admin Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/admin/flagged-ingredients` | GET | Fetch all flagged ingredients and their status |
+| `/api/admin/flagged-ingredients/:id` | PUT | Update a flagged ingredient's status |
+| `/api/admin/submissions` | GET | Fetch all pending product submissions |
+| `/api/admin/submissions/:id/approve` | POST | Approve submission → moves to `products` table |
+| `/api/admin/submissions/:id/reject` | POST | Reject submission → updates status to rejected |
+
+---
+
+## Row Level Security (RLS) Policies
+
+> ⚠️ Several tables are currently marked **UNRESTRICTED**. RLS must be implemented before go-live.
+
+| Table | Policy |
+|---|---|
+| `SavedProducts` | Users can only view/manage their own rows |
+| `ProductSubmissions` | Users can only view/manage their own rows |
+| `products` | Publicly readable; only admin can update/delete |
+| `ingredients` | Publicly readable; only admin can update/delete |
+| `scoring_rules` | Publicly readable; only admin can update/delete |
+| `studies` | Publicly readable; only admin can update/delete |
+
+---
