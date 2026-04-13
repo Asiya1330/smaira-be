@@ -32,8 +32,8 @@ export async function runBarcodeScan(barcode: string): Promise<BarcodeScanRespon
   if (obf) {
     return {
       source: "open_beauty_facts",
-      product: obf,
-      ingredients: [],
+      product: obf.product,
+      ingredients: obf.ingredients,
       submissionPrompt: {
         message:
           "Product found via Open Beauty Facts but not in our catalog. You may submit it for review.",

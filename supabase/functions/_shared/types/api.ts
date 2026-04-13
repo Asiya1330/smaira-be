@@ -4,19 +4,10 @@ export type ScanSource = "database" | "open_beauty_facts" | "not_found";
 
 export type BarcodeScanResponse = {
   source: ScanSource;
-  product: ProductRow | MappedObfProduct | null;
+  /** DB row, or OBF data mapped to the same `ProductRow` shape (`id` is nil UUID when not persisted). */
+  product: ProductRow | null;
   ingredients: IngredientDetail[];
   submissionPrompt: { message: string; submitFunction: string } | null;
-};
-
-/** OBF-mapped shape when product is not yet in DB (subset of ProductRow). */
-export type MappedObfProduct = {
-  name: string;
-  brand: string | null;
-  barcode: string;
-  category: string | null;
-  image_url: string | null;
-  source_url: string | null;
 };
 
 export type IngredientDetail = {

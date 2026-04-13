@@ -32,7 +32,7 @@ export async function scoreProductById(
       score: computation.finalScore,
       rating,
     },
-    ingredients: toIngredientDetails(ingredients),
-    summary: computation.summary,
+    // ingredients: toIngredientDetails(ingredients),
+    summary: computation.summary
   };
 }
