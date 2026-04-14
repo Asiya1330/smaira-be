@@ -51,7 +51,7 @@ export async function fetchObfByBarcode(
 }
 
 function mapObfToProductRow(p: ObfV2Product, barcode: string): ProductRow {
-  const name = pickProductName(p, barcode);
+  const product_name = pickProductName(p, barcode);
   const brand = pickBrand(p);
   const category = pickCategory(p);
   const image_url = p.image_front_url ?? p.image_url ?? null;
@@ -59,19 +59,26 @@ function mapObfToProductRow(p: ObfV2Product, barcode: string): ProductRow {
 
   return {
     id: OBF_EPHEMERAL_PRODUCT_ID,
-    name,
-    brand,
     barcode,
+    product_name,
+    brand,
     category,
-    image_url,
-    score: null,
-    organic: inferOrganic(p),
-    certifications: pickCertifications(p),
+    size_count: null,
+    absorbency: null,
+    ingredients_list: p.ingredients_text?.trim() ?? null,
+    material_composition: null,
+    bleaching_method: null,
+    synthetic_materials: null,
     preservatives: null,
     fragrance_type: null,
-    synthetic_materials: null,
-    bleaching_method: null,
+    antibacterial_agents: null,
     ph_level: null,
+    usda_organic: inferOrganic(p),
+    gots_certified: inferCertification(p, "gots"),
+    oeko_tex_certified: inferCertification(p, "oeko-tex"),
+    gyno_approved: inferCertification(p, "gynecologist-tested"),
+    image_url,
+    score: null,
     source_url,
     verified: false,
   };
@@ -106,19 +113,18 @@ function obfProductPageUrl(barcode: string): string {
   return `https://world.openbeautyfacts.org/product/${encodeURIComponent(barcode)}`;
 }
 
-function inferOrganic(p: ObfV2Product): string | null {
+function inferOrganic(p: ObfV2Product): boolean | null {
   const tags = p.labels_tags ?? [];
-  if (tags.some((t) => t.includes("organic") || t.includes("bio"))) return "Yes";
+  if (tags.some((t) => t.includes("organic") || t.includes("bio"))) return true;
   return null;
 }
 
-function pickCertifications(p: ObfV2Product): string | null {
-  const labels = p.labels?.trim();
-  if (labels) return labels;
-  const tags = p.labels_tags?.filter((t) => t.startsWith("en:")).map((t) =>
-    t.replace(/^..:/, "").replace(/-/g, " ")
-  );
-  if (tags?.length) return [...new Set(tags)].join(", ");
+function inferCertification(p: ObfV2Product, keyword: string): boolean | null {
+  const labels = p.labels?.toLowerCase() ?? "";
+  const tags = p.labels_tags ?? [];
+  if (labels.includes(keyword) || tags.some((t) => t.toLowerCase().includes(keyword))) {
+    return true;
+  }
   return null;
 }
 

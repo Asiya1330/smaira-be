@@ -1,19 +1,29 @@
 /** Aligns with README `products` table. */
 export type ProductRow = {
   id: string;
-  name: string;
+  barcode: string;
+  product_name: string | null;
+  name?: string | null;
   brand: string | null;
-  barcode: string | null;
   category: string | null;
-  image_url: string | null;
-  score: number | null;
-  organic: string | null;
-  certifications: string | null;
+  size_count: string | null;
+  absorbency: string | null;
+  ingredients_list: string | null;
+  material_composition: string | null;
+  bleaching_method: string | null;
+  synthetic_materials: string | null;
   preservatives: string | null;
   fragrance_type: string | null;
-  synthetic_materials: string | null;
-  bleaching_method: string | null;
+  antibacterial_agents: string | null;
   ph_level: string | null;
+  usda_organic: boolean | null;
+  gots_certified: boolean | null;
+  oeko_tex_certified: boolean | null;
+  gyno_approved: boolean | null;
+  image_url: string | null;
+  score: number | null;
+  organic?: string | null;
+  certifications?: string | null;
   source_url: string | null;
   verified: boolean | null;
 };

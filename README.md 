@@ -13,21 +13,30 @@ This document outlines the full backend scope, database schema, scoring algorith
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key |
-| name | text | Product name |
-| brand | text | Brand name |
 | barcode | text | Unique barcode |
+| product_name | text | Product name |
+| brand | text | Brand name |
 | category | text | Product category |
+| size_count | text | Size/count descriptor (if available) |
+| absorbency | text | Absorbency descriptor (if available) |
+| ingredients_list | text | Raw/comma-separated ingredient list |
+| material_composition | text | Product material details |
+| bleaching_method | text | e.g. chlorine, unknown, N/A |
+| synthetic_materials | text | Synthetic material details |
+| preservatives | text | Preservative details |
+| fragrance_type | text | scented / unscented / fragrance-free / etc. |
+| antibacterial_agents | text | Antibacterial ingredient details |
+| ph_level | text | Product pH range/value if known |
+| usda_organic | boolean | true / false / null |
+| gots_certified | boolean | true / false / null |
+| oeko_tex_certified | boolean | true / false / null |
+| gyno_approved | boolean | true / false / null |
 | image_url | text | Product image URL |
 | score | integer | Calculated normalized score (0–100) |
-| organic | text | Yes / No |
-| certifications | text | e.g. USDA Organic, GOTS, Oeko-Tex |
-| preservatives | text | |
-| fragrance_type | text | |
-| synthetic_materials | text | |
-| bleaching_method | text | |
-| ph_level | text | |
 | source_url | text | |
 | verified | boolean | true / false |
+
+> **Compatibility note:** Legacy fields such as `name`, `organic`, and `certifications` may still exist in some environments for backward compatibility, but new writes should use the columns above.
 
 ---
 
@@ -618,7 +627,7 @@ The product detail endpoint should return:
 ```json
 {
   "product": {
-    "name": "",
+    "product_name": "",
     "brand": "",
     "category": "",
     "image_url": "",

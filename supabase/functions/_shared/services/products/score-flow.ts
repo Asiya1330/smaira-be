@@ -25,7 +25,7 @@ export async function scoreProductById(
 
   return {
     product: {
-      name: product.name,
+      product_name: product.product_name ?? product.name ?? "Unknown product",
       brand: product.brand,
       category: product.category,
       image_url: product.image_url,

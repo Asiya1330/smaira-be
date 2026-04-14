@@ -27,7 +27,7 @@ export type IngredientSummaryCounts = {
 
 export type ProductScoreResponse = {
   product: {
-    name: string;
+    product_name: string;
     brand: string | null;
     category: string | null;
     image_url: string | null;
