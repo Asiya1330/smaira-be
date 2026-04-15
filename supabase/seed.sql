@@ -56,11 +56,35 @@ VALUES
   ('00000000-0000-0000-0000-000000000027'::uuid, 'Lactic Acid', 'Lactic Acid', 'Beneficial', 'Can support acidic pH balance in intimate wash formulations.', NULL, NULL, NULL, NULL, NULL, NULL, 2),
   ('00000000-0000-0000-0000-000000000028'::uuid, 'Sodium Benzoate', 'Sodium Benzoate', 'Neutral', 'Widely used preservative with generally acceptable safety profile.', NULL, NULL, NULL, NULL, NULL, NULL, 0),
   ('00000000-0000-0000-0000-000000000029'::uuid, 'Disodium EDTA', 'Disodium EDTA', 'Neutral', 'Chelating agent used to stabilize formulations.', NULL, NULL, NULL, NULL, NULL, NULL, 0),
-  ('00000000-0000-0000-0000-000000000030'::uuid, 'Fragrance', 'Fragrance', 'Harmful', 'Fragrance mixes are frequent triggers for sensitivity and irritation.', NULL, NULL, NULL, NULL, NULL, NULL, -2)
+  ('00000000-0000-0000-0000-000000000030'::uuid, 'Fragrance', 'Fragrance', 'Harmful', 'Fragrance mixes are frequent triggers for sensitivity and irritation.', NULL, NULL, NULL, NULL, NULL, NULL, -2),
+  
+  -- Extra test ingredients for product 6a31292e-3e09-5f39-a80e-b1c139dabc6f
+
+  ('00000000-0000-0000-0000-000000000031'::uuid, 'Aloe Vera Extract', 'Aloe Barbadensis Leaf Extract', 'Beneficial', 'Soothing botanical often used to calm irritation.', NULL, NULL, NULL, NULL, NULL, 'test seed', 2),
+  ('00000000-0000-0000-0000-000000000032'::uuid, 'Tea Tree Oil', 'Melaleuca Alternifolia Leaf Oil', 'Harmful', 'Can be sensitizing for some users in intimate products.', NULL, NULL, NULL, NULL, NULL, 'test seed', -2),
+  ('00000000-0000-0000-0000-000000000033'::uuid, 'Panthenol', 'Panthenol', 'Beneficial', 'Pro-vitamin B5 with moisturizing support.', NULL, NULL, NULL, NULL, NULL, 'test seed', 1),
+  ('00000000-0000-0000-0000-000000000034'::uuid, 'Phenoxyethanol', 'Phenoxyethanol', 'Harmful', 'Preservative with irritation concerns in sensitive users.', NULL, NULL, NULL, NULL, NULL, 'test seed', -1),
+  ('00000000-0000-0000-0000-000000000035'::uuid, 'Sodium Citrate', 'Sodium Citrate', 'Neutral', 'Buffering agent commonly used for pH adjustment.', NULL, NULL, NULL, NULL, NULL, 'test seed', 0),
+  ('00000000-0000-0000-0000-000000000036'::uuid, 'Chamomile Extract', 'Chamomilla Recutita Flower Extract', 'Beneficial', 'Botanical extract associated with soothing effects.', NULL, NULL, NULL, NULL, NULL, 'test seed', 2),
+  ('00000000-0000-0000-0000-000000000037'::uuid, 'Methylparaben', 'Methylparaben', 'Harmful', 'Preservative often flagged for endocrine-safety concerns.', NULL, NULL, NULL, NULL, NULL, 'test seed', -2),
+  ('00000000-0000-0000-0000-000000000038'::uuid, 'Caprylyl Glycol', 'Caprylyl Glycol', 'Neutral', 'Humectant/preservative booster generally tolerated.', NULL, NULL, NULL, NULL, NULL, 'test seed', 0),
+  ('00000000-0000-0000-0000-000000000039'::uuid, 'Limonene', 'Limonene', 'Harmful', 'Fragrance allergen marker in sensitive populations.', NULL, NULL, NULL, NULL, NULL, 'test seed', -1),
+  ('00000000-0000-0000-0000-000000000040'::uuid, 'Niacinamide', 'Niacinamide', 'Beneficial', 'Barrier-supportive vitamin B3 derivative.', NULL, NULL, NULL, NULL, NULL, 'test seed', '(+1)')
 ON CONFLICT (ingredient_id) DO NOTHING;
 
 INSERT INTO public.product_ingredients (id, product_id, ingredient_id)
 VALUES
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000031'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000032'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000033'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000034'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000035'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000036'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000037'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000038'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000039'::uuid),
+  (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000040'::uuid),
+
   (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000001'::uuid),
   (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000002'::uuid),
   (gen_random_uuid(), '6a31292e-3e09-5f39-a80e-b1c139dabc6f'::uuid, '00000000-0000-0000-0000-000000000003'::uuid),
