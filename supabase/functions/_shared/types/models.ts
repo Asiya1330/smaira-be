@@ -33,7 +33,8 @@ export type IngredientRow = {
   ingredient_id: string;
   ingredient_name: string;
   inci_name: string;
-  impact_score: number | null;
+  /** Labels: `(-2)`, `(-1)`, `(0)`, `(+1)`, `(+2)` — see scoring `parseImpactScoreToNumber`. */
+  impact_score: string | null;
   classification: IngredientClassification | null;
   plain_english_summary: string | null;
   study_title?: string | null;
@@ -87,9 +88,10 @@ export type ProductSubmissionRow = {
 
 export type FlaggedIngredientRow = {
   id: string;
-  product_name: string | null;
+  /** Product UUIDs linked to this flag; empty when the row is catalog-only (no product context). */
+  product_ids: string[];
   ingredient_name: string | null;
   inci_name: string | null;
   flagged_at: string;
-  status: "Pending" | "In Progress" | "Scored" | string;
+  status: "Pending" | "Reviewed" | "Resolved";
 };

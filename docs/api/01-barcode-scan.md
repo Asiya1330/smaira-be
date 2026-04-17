@@ -23,7 +23,7 @@ GET /functions/v1/products-scan?barcode=73010713192
         "inci_name": "...",
         "classification": "Neutral",
         "plain_english_summary": "...",
-        "impact_score": 0
+        "impact_score": "(0)"
       }
     ],
     "submissionPrompt": null

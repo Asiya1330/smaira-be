@@ -34,7 +34,7 @@ create table if not exists public.ingredients (
   ingredient_id uuid primary key default gen_random_uuid(),
   ingredient_name text not null,
   inci_name text not null,
-  impact_score integer,
+  impact_score text,
   classification text,
   plain_english_summary text,
   study_title text,
@@ -87,7 +87,7 @@ create table if not exists public.product_submissions (
 
 create table if not exists public.flagged_ingredients (
   id uuid primary key default gen_random_uuid(),
-  product_name text not null,
+  product_ids uuid[] not null default '{}',
   ingredient_name text,
   inci_name text,
   flagged_at timestamptz not null default now(),

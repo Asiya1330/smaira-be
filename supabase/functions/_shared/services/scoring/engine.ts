@@ -1,5 +1,6 @@
 import type { IngredientRow } from "../../types/models.ts";
 import type { IngredientSummaryCounts, ScoreComputation } from "../../types/api.ts";
+import { parseImpactScoreToNumber } from "./impact-score.ts";
 import { ratingForScore } from "./rating.ts";
 
 function isNoData(c: string | null | undefined): boolean {
@@ -13,11 +14,7 @@ function isScoredIngredient(row: IngredientRow): boolean {
   if (!row.classification || !SCORED_CLASSIFICATIONS.has(row.classification)) {
     return false;
   }
-  return (
-    row.impact_score !== null &&
-    row.impact_score !== undefined &&
-    !Number.isNaN(Number(row.impact_score))
-  );
+  return parseImpactScoreToNumber(row.impact_score) !== null;
 }
 
 function countSummary(rows: IngredientRow[]): IngredientSummaryCounts {
@@ -59,15 +56,16 @@ export function computeProductScore(ingredients: IngredientRow[]): ScoreComputat
       summary,
     };
   }
-
-  const rawScore = scored.reduce((acc, r) => acc + Number(r.impact_score), 0);
+  const rawScore = scored.reduce(
+    (acc, r) => acc + (parseImpactScoreToNumber(r.impact_score) ?? 0),
+    0,
+  );
   const minimumPossible = n * -2;
   const maximumPossible = n * 2;
   const normalized =
     ((rawScore - minimumPossible) / (maximumPossible - minimumPossible)) * 100;
-  const finalScore = Math.round(Math.min(100, Math.max(0, normalized)));
+    const finalScore = Math.round(Math.min(100, Math.max(0, normalized)));
   const rating = ratingForScore(finalScore);
-
   return {
     finalScore,
     rating,

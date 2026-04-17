@@ -6,7 +6,7 @@
 | `products-score` | Load ingredients, run scoring algorithm, persist `products.score` |
 | `saved-products` | User JWT — list / save / delete saved products |
 | `product-submissions` | Authenticated product submission for review |
-| `admin` | Flagged ingredients + submission approve/reject (`x-admin-secret`) |
+| `admin` | Flagged ingredients (list/update + No Data sync to flagged), submissions, ingredient create/update (`x-admin-secret`) |
 | `_shared` | HTTP helpers, env, Supabase clients, domain services |
 
 **Conventions**

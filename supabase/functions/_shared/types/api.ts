@@ -15,7 +15,8 @@ export type IngredientDetail = {
   inci_name: string;
   classification: string | null;
   plain_english_summary: string | null;
-  impact_score: number | null;
+  /** Same stored labels as DB: `(-2)` … `(+2)`. */
+  impact_score: string | null;
 };
 
 export type IngredientSummaryCounts = {

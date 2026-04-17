@@ -1,22 +1,30 @@
 import { assertAdmin } from "../_shared/services/admin/guard.ts";
 import {
   approveSubmission,
+  createIngredient,
   listFlaggedIngredients,
   listPendingSubmissions,
+  parseCreateIngredientBody,
+  parseUpdateIngredientPatch,
   rejectSubmission,
+  syncNoDataIngredientsToFlagged,
   updateFlaggedIngredientStatus,
+  updateIngredient,
 } from "../_shared/services/admin/repository.ts";
 import { serveWithCors } from "../_shared/handler.ts";
-import { jsonError, jsonOk, readJson, requireMethod } from "../_shared/http.ts";
+import { jsonError, jsonOk, readJson } from "../_shared/http.ts";
 
 /**
  * Single admin Edge Function; route with query params (Supabase has one URL per function).
  *
  * GET  ?resource=flagged-ingredients
- * PUT  ?resource=flagged-ingredients&id=<uuid>  body: { "status": "..." }
+ * PUT  ?resource=flagged-ingredients&id=<uuid>  body: { "status": "Pending"|"Reviewed"|"Resolved" } (case-insensitive)
+ * POST ?resource=flagged-ingredients&action=sync-no-data  (No Data → flagged; product_ids may be empty)
  * GET  ?resource=submissions
  * POST ?resource=submissions&action=approve&id=<uuid>
  * POST ?resource=submissions&action=reject&id=<uuid>  body optional { "review_notes": "..." }
+ * POST ?resource=ingredients  body: full ingredient payload (see docs/api/06-admin.md)
+ * PATCH ?resource=ingredients&id=<uuid>  body: partial ingredient fields
  *
  * Header: x-admin-secret: <ADMIN_SECRET>
  */
@@ -52,6 +60,20 @@ serveWithCors(async (req) => {
       return jsonOk({ updated: true });
     }
 
+    if (req.method === "POST" && resource === "flagged-ingredients") {
+      const action = url.searchParams.get("action");
+      if (action === "sync-no-data") {
+        const result = await syncNoDataIngredientsToFlagged();
+        return jsonOk({
+          synced: true,
+          inserted: result.inserted,
+          updated: result.updated,
+          no_data_ingredient_count: result.no_data_ingredient_count,
+        });
+      }
+      return jsonError("Query action must be sync-no-data", 400);
+    }
+
     if (req.method === "POST" && resource === "submissions") {
       const action = url.searchParams.get("action");
       const id = url.searchParams.get("id");
@@ -72,6 +94,34 @@ serveWithCors(async (req) => {
         return jsonOk({ rejected: true });
       }
       return jsonError("Query action must be approve or reject", 400);
+    }
+
+    if (req.method === "POST" && resource === "ingredients") {
+      const raw = await readJson<unknown>(req);
+      let input;
+      try {
+        input = parseCreateIngredientBody(raw);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 400);
+      }
+      const ingredient = await createIngredient(input);
+      return jsonOk({ created: true, ingredient }, 201);
+    }
+
+    if (req.method === "PATCH" && resource === "ingredients") {
+      const id = url.searchParams.get("id");
+      if (!id) return jsonError("Query id is required", 400);
+      const raw = await readJson<unknown>(req);
+      let patch;
+      try {
+        patch = parseUpdateIngredientPatch(raw);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return jsonError(msg, 400);
+      }
+      const ingredient = await updateIngredient(id, patch);
+      return jsonOk({ updated: true, ingredient });
     }
 
     return jsonError(

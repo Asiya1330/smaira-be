@@ -47,7 +47,7 @@ This document outlines the full backend scope, database schema, scoring algorith
 | ingredient_id | uuid | Primary key, auto-generated |
 | ingredient_name | text | Common name |
 | inci_name | text | Standardized INCI name — **critical matching key** |
-| impact_score | integer | -2 to +2 (nullable) |
+| impact_score | text | Stored labels: `(-2)`, `(-1)`, `(0)`, `(+1)`, `(+2)` (nullable); scoring treats these as numeric -2 … +2 |
 | classification | text | Beneficial / Harmful / Neutral / No Data (nullable) |
 | plain_english_summary | text | One-sentence user-facing explanation (nullable) |
 | study_title | text | Supporting clinical study title (nullable) |
@@ -115,11 +115,11 @@ This document outlines the full backend scope, database schema, scoring algorith
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid | Primary key, auto-generated |
-| product_name | text | |
+| product_ids | uuid[] | Products implicated by this flag (empty `{}` for catalog-only rows with no product context) |
 | ingredient_name | text | |
 | inci_name | text | |
 | flagged_at | timestamp | Auto-set on insert |
-| status | text | Pending / In Progress / Scored (default: Pending) |
+| status | text | `Pending`, `Reviewed`, or `Resolved` (default: Pending) |
 
 ---
 
@@ -577,7 +577,7 @@ The payload is large and **varies by product** (optional fields, locales, images
 ### Step 3 — Individual Ingredient Scoring
 
 For each ingredient retrieve from `ingredients`:
-- `impact_score` — integer: +2, +1, 0, -1, -2
+- `impact_score` — text labels `(+2)`, `(+1)`, `(0)`, `(-1)`, `(-2)`; the scoring layer maps each label to its numeric value for math
 - `classification` — Beneficial / Harmful / Neutral / No Data
 - `plain_english_summary` — one-sentence explanation
 
@@ -590,7 +590,7 @@ For each ingredient retrieve from `ingredients`:
 ### Step 4 — Product Score Calculation
 
 ```
-raw_score = sum of all valid impact_scores
+raw_score = sum of numeric equivalents of all valid impact_score labels (e.g. "(+1)" → 1, "(-2)" → -2)
 
 maximum_possible = number_of_scored_ingredients × 2
 minimum_possible = number_of_scored_ingredients × -2
@@ -639,7 +639,7 @@ The product detail endpoint should return:
       "ingredient_name": "",
       "classification": "Beneficial | Harmful | Neutral | No Data",
       "plain_english_summary": "",
-      "impact_score": 0
+      "impact_score": "(0)"
     }
   ],
   "summary": {
@@ -663,7 +663,7 @@ Whenever a new row is inserted into the `products` table **or** a new `ProductSu
 2. Flag any ingredient where:
    - `impact_score` is null, **or**
    - The ingredient does not exist in the `ingredients` table.
-3. Insert flagged rows into the `flagged_ingredients` table with `status = Pending`.
+3. Insert flagged rows into the `flagged_ingredients` table with `status = Pending` and the relevant product id(s) in `product_ids` when known.
 
 ---
 
@@ -741,9 +741,98 @@ Submits an unknown product for review. Stored in `ProductSubmissions` with `stat
 |---|---|---|
 | `/api/admin/flagged-ingredients` | GET | Fetch all flagged ingredients and their status |
 | `/api/admin/flagged-ingredients/:id` | PUT | Update a flagged ingredient's status |
+| `/api/admin/flagged-ingredients/sync-no-data` | POST | Sync “No Data” ingredients into `flagged_ingredients` (`product_ids` set per product, or `[]` if unlinked) |
 | `/api/admin/submissions` | GET | Fetch all pending product submissions |
 | `/api/admin/submissions/:id/approve` | POST | Approve submission → moves to `products` table |
 | `/api/admin/submissions/:id/reject` | POST | Reject submission → updates status to rejected |
+| `/api/admin/ingredients` | POST | Create a new ingredient |
+| `/api/admin/ingredients/:id` | PATCH | Update ingredient fields (`impact_score`, `classification`, `plain_english_summary`, etc.) |
+
+Edge function base path: `POST /functions/v1/admin` with query `resource` / `action` and header `x-admin-secret`. Examples are in `docs/api/06-admin.md`.
+
+#### Sync No Data → flagged
+
+**`POST /api/admin/flagged-ingredients/sync-no-data`**
+
+For each distinct **`inci_name`** among `No Data` ingredients: **one** `flagged_ingredients` row when inserting (match existing by INCI case-insensitively). All products linked via `product_ingredients` are merged into **`product_ids`** (sorted, unique). Unlinked ingredients use **`product_ids` = `[]`**.
+
+```json
+{
+  "success": true,
+  "data": {
+    "synced": true,
+    "inserted": 2,
+    "no_data_ingredient_count": 8
+  }
+}
+```
+
+#### Create ingredient
+
+**`POST /api/admin/ingredients`**
+
+Creates a new ingredient record for scoring.
+
+**Body**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| ingredient_name | text | Yes | |
+| inci_name | text | Yes | |
+| impact_score | text | Yes | One of `(-2)`, `(-1)`, `(0)`, `(+1)`, `(+2)` |
+| classification | text | Yes | |
+| plain_english_summary | text | Yes | |
+| (other columns) | | Yes | Full list in `docs/api/06-admin.md` |
+
+**Example response to frontend**
+
+```json
+{
+  "success": true,
+  "data": {
+    "created": true,
+    "ingredient": {
+      "ingredient_id": "uuid",
+      "ingredient_name": "Niacinamide",
+      "inci_name": "niacinamide",
+      "impact_score": "(+2)",
+      "classification": "Beneficial",
+      "plain_english_summary": "Supports skin barrier and is generally well tolerated."
+    }
+  }
+}
+```
+
+#### Update ingredient scoring fields
+
+**`PATCH /api/admin/ingredients/:id`**
+
+Updates one or more fields for an existing ingredient.
+
+**Body (any of the following)**
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| impact_score | text | No | Same label set as create |
+| classification | text | No | |
+| plain_english_summary | text | No | |
+
+**Example response to frontend**
+
+```json
+{
+  "success": true,
+  "data": {
+    "updated": true,
+    "ingredient": {
+      "ingredient_id": "uuid",
+      "impact_score": "(-1)",
+      "classification": "Harmful",
+      "plain_english_summary": "Can irritate sensitive skin in higher concentrations."
+    }
+  }
+}
+```
 
 ---
 

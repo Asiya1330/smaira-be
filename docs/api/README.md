@@ -27,7 +27,7 @@ or
 | [03-authentication.md](./03-authentication.md) | Supabase Auth (client-side) |
 | [04-saved-products.md](./04-saved-products.md) | `saved-products` |
 | [05-product-submissions.md](./05-product-submissions.md) | `product-submissions` |
-| [06-admin.md](./06-admin.md) | `admin` |
+| [06-admin.md](./06-admin.md) | `admin` (flagged ingredients + No Data sync, submissions, ingredients CRUD) |
 
 Environment secrets for functions (set in Supabase Dashboard or CLI):
 

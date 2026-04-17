@@ -3,7 +3,7 @@
 **Method:** `GET`  
 **Query:** `productId` (uuid, required)
 
-Computes the normalized score (README algorithm), persists it to `products.score`, and returns the breakdown.
+Computes the normalized score (README algorithm), persists it to `products.score`, and returns the breakdown. Ingredient rows use string `impact_score` labels such as `(+1)` and `(-2)`; the server maps them to -2…+2 for the calculation.
 
 **Example**
 
