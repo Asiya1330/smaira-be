@@ -30,9 +30,10 @@ export async function scoreProductById(
       category: product.category,
       image_url: product.image_url,
       score: computation.finalScore,
+      ingredients: product.ingredients_list,
       rating,
     },
-    // ingredients: toIngredientDetails(ingredients),
-    summary: computation.summary
+    ingredients: toIngredientDetails(ingredients),
+    summary: computation.summary,
   };
 }

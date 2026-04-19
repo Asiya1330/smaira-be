@@ -241,9 +241,12 @@ export async function updateIngredient(
     .eq("ingredient_id", id)
     .select()
     .single();
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Ingredient not found");
-  return data as IngredientRow;
+    if(error?.code == "PGRST116") { // PGRST116: no results returned
+      throw new Error("Ingredient not found");
+    }
+    else throw new Error(error.message);
+    if (!data) throw new Error("Ingredient not found");
+    return data as IngredientRow;
 }
 
 export async function listFlaggedIngredients(): Promise<FlaggedIngredientRow[]> {

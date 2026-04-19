@@ -18,14 +18,22 @@ GET /functions/v1/products-score?productId=00000000-0000-0000-0000-000000000000
   "success": true,
   "data": {
     "product": {
-      "name": "...",
+      "product_name": "...",
       "brand": "...",
       "category": "...",
       "image_url": "...",
       "score": 72,
       "rating": "Microbiome Friendly"
     },
-    "ingredients": [],
+    "ingredients": [
+      {
+        "ingredient_name": "Rayon",
+        "inci_name": "Rayon",
+        "classification": "Neutral",
+        "plain_english_summary": null,
+        "impact_score": "(0)"
+      }
+    ],
     "summary": {
       "beneficial_count": 1,
       "harmful_count": 0,
@@ -36,3 +44,5 @@ GET /functions/v1/products-score?productId=00000000-0000-0000-0000-000000000000
 }
 
 ```
+
+Each ingredient object matches [`products-scan`](./01-barcode-scan.md): `ingredient_name`, `inci_name`, `classification`, `plain_english_summary`, and `impact_score` (stored labels such as `(0)` and `(+1)`, same as the database).
