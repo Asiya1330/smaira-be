@@ -125,7 +125,7 @@ serveWithCors(async (req) => {
     }
 
     return jsonError(
-      "Unsupported method/resource. See docs/api/06-admin.md",
+      "Unsupported method/resource. ",
       400,
     );
   } catch (e) {

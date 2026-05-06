@@ -436,7 +436,6 @@ export async function approveSubmission(
   submissionId: string,
 ): Promise<ProductRow> {
   const row = await getSubmissionById(submissionId);
-  console.log("row", row);
   if (!row) throw new Error("Submission not found");
   if (row.status !== "pending") throw new Error("Submission has already been approved or rejected");
 
