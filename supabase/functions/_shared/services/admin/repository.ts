@@ -244,7 +244,7 @@ export async function updateIngredient(
     if(error?.code == "PGRST116") { // PGRST116: no results returned
       throw new Error("Ingredient not found");
     }
-    else throw new Error(error.message);
+    else if(error) throw new Error(error.message);
     if (!data) throw new Error("Ingredient not found");
     return data as IngredientRow;
 }
@@ -436,8 +436,9 @@ export async function approveSubmission(
   submissionId: string,
 ): Promise<ProductRow> {
   const row = await getSubmissionById(submissionId);
+  console.log("row", row);
   if (!row) throw new Error("Submission not found");
-  if (row.status !== "pending") throw new Error("Submission is not pending");
+  if (row.status !== "pending") throw new Error("Submission has already been approved or rejected");
 
   const product = await insertProduct({
     barcode: row.barcode,

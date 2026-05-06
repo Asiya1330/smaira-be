@@ -2,6 +2,7 @@ import { getUserFromRequest } from "../_shared/supabase/user-context.ts";
 import { serveWithCors } from "../_shared/handler.ts";
 import { jsonError, jsonOk, readJson, requireMethod } from "../_shared/http.ts";
 import { createSubmission } from "../_shared/services/submissions/repository.ts";
+import { findProductByBarcode } from "../_shared/services/products/repository.ts";
 
 type Body = {
   product_name: string;
@@ -28,6 +29,13 @@ serveWithCors(async (req) => {
     if (!body?.product_name || !body?.barcode) {
       return jsonError("product_name and barcode are required", 400);
     }
+
+    //make sure product barcode doen not exist in products table
+    const existingProduct = await findProductByBarcode(body.barcode);
+    if (existingProduct) {
+      return jsonError("Product with this barcode already exists", 400);
+    }
+
     const { id } = await createSubmission({
       user_id: user.id,
       product_name: body.product_name,
