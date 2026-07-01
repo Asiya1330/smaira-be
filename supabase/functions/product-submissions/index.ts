@@ -3,6 +3,7 @@ import { serveWithCors } from "../_shared/handler.ts";
 import { jsonError, jsonOk, readJson, requireMethod } from "../_shared/http.ts";
 import { createSubmission } from "../_shared/services/submissions/repository.ts";
 import { findProductByBarcode } from "../_shared/services/products/repository.ts";
+import { getAdminSecret } from "../_shared/config/env.ts";
 
 type Body = {
   product_name: string;
@@ -36,6 +37,10 @@ serveWithCors(async (req) => {
       return jsonError("Product with this barcode already exists", 400);
     }
 
+    const adminSecret = req.headers.get("x-admin-secret");
+    const isAdminSecretValid = adminSecret === getAdminSecret();
+
+    // TODO: add a test to check if the submitter_role is admin if the admin secret is valid
     const { id } = await createSubmission({
       user_id: user.id,
       product_name: body.product_name,
@@ -44,6 +49,7 @@ serveWithCors(async (req) => {
       category: body.category,
       image_url: body.image_url,
       ingredients: body.ingredients,
+      submitter_role: isAdminSecretValid ? "admin" : "user",
     });
     return jsonOk({ id, status: "pending" }, 201);
   } catch (e) {

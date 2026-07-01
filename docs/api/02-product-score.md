@@ -31,7 +31,17 @@ GET /functions/v1/products-score?productId=00000000-0000-0000-0000-000000000000
         "inci_name": "Rayon",
         "classification": "Neutral",
         "plain_english_summary": null,
-        "impact_score": "(0)"
+        "short_description": null,
+        "impact_score": "(0)",
+        "point_contribution": 0
+      }
+    ],
+    "concerns": [
+      {
+        "name": "Methylparaben",
+        "severity": "High",
+        "description": "Preservative often flagged for endocrine-safety concerns.",
+        "learn_more_url": null
       }
     ],
     "summary": {
@@ -45,4 +55,6 @@ GET /functions/v1/products-score?productId=00000000-0000-0000-0000-000000000000
 
 ```
 
-Each ingredient object matches [`products-scan`](./01-barcode-scan.md): `ingredient_name`, `inci_name`, `classification`, `plain_english_summary`, and `impact_score` (stored labels such as `(0)` and `(+1)`, same as the database).
+Each ingredient object matches [`products-scan`](./01-barcode-scan.md): `ingredient_name`, `inci_name`, `classification`, `plain_english_summary`, `impact_score` (stored labels such as `(0)` and `(+1)`, same as the database), and `point_contribution` (exact points the ingredient moved the final score; see [`products-scan`](./01-barcode-scan.md#point_contribution)).
+
+`concerns` is the same Microbiome Concerns array as [`products-scan`](./01-barcode-scan.md#concerns): one object per `Harmful` ingredient, sorted `High` → `Moderate` → `Low`.

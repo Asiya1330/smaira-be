@@ -1,6 +1,7 @@
 import { runBarcodeScan } from "../_shared/services/barcode-scan/orchestrator.ts";
 import { serveWithCors } from "../_shared/handler.ts";
 import { jsonError, jsonOk, requireMethod } from "../_shared/http.ts";
+import { getUserFromRequest } from "../_shared/supabase/user-context.ts";
 
 /**
  * GET /functions/v1/products-scan?barcode=...
@@ -15,8 +16,11 @@ serveWithCors(async (req) => {
     return jsonError("Query parameter `barcode` is required", 400);
   }
 
+  const { user, error: authError } = await getUserFromRequest(req);
+  if (!user) return jsonError(authError ?? "Unauthorized", 401);
+
   try {
-    const data = await runBarcodeScan(barcode);
+    const data = await runBarcodeScan(barcode, user.id);
     return jsonOk(data);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

@@ -25,6 +25,26 @@ export async function findProductById(id: string): Promise<ProductRow | null> {
   return data as ProductRow | null;
 }
 
+/**
+ * Returns the top-scoring products within a category, highest score first.
+ * Products without a score are excluded. Category match is case-insensitive.
+ */
+export async function findTopProductsByCategory(
+  category: string,
+  limit = 3,
+): Promise<ProductRow[]> {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .ilike("category", category)
+    .not("score", "is", null)
+    .order("score", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ProductRow[];
+}
+
 export async function updateProductScore(
   productId: string,
   score: number,

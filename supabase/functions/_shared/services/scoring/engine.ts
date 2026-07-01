@@ -9,12 +9,26 @@ function isNoData(c: string | null | undefined): boolean {
 
 const SCORED_CLASSIFICATIONS = new Set(["Beneficial", "Harmful", "Neutral"]);
 
-function isScoredIngredient(row: IngredientRow): boolean {
+/** Score range a single ingredient spans: max(+2) − min(−2). */
+const POINT_RANGE_PER_INGREDIENT = 4;
+
+export function isScoredIngredient(row: IngredientRow): boolean {
   if (isNoData(row.classification)) return false;
   if (!row.classification || !SCORED_CLASSIFICATIONS.has(row.classification)) {
     return false;
   }
   return parseImpactScoreToNumber(row.impact_score) !== null;
+}
+
+/**
+ * Exact points one ingredient moved the final 0–100 score, relative to the
+ * neutral midpoint. `range = scoredCount * 4`, so e.g. impact −2 across 5 scored
+ * ingredients → −2/20*100 = −10.0. Rounded to 1 decimal.
+ */
+export function pointContribution(impact: number, scoredCount: number): number {
+  if (scoredCount <= 0) return 0;
+  const range = scoredCount * POINT_RANGE_PER_INGREDIENT;
+  return Math.round((impact / range) * 1000) / 10;
 }
 
 function countSummary(rows: IngredientRow[]): IngredientSummaryCounts {

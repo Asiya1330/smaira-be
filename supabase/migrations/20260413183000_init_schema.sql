@@ -93,3 +93,10 @@ create table if not exists public.flagged_ingredients (
   flagged_at timestamptz not null default now(),
   status text not null default 'Pending'
 );
+
+create table public.profiles (
+  id uuid not null,
+  role text null,
+  constraint profiles_pkey primary key (id),
+  constraint profiles_id_fkey foreign KEY (id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;

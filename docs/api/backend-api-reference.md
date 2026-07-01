@@ -153,7 +153,7 @@ Use `access_token` as `$ACCESS_TOKEN` in the examples below.
 | `GET` | `products-score` | Compute and persist product score |
 | `POST` | `product-submissions` | Authenticated product submission for review |
 | `GET` / `POST` / `DELETE` | `saved-products` | List, add, remove saved products (JWT) |
-| `GET` / `PUT` / `POST` / `PATCH` | `admin` | Moderation: flagged ingredients, submissions, ingredients (`x-admin-secret`) |
+| `GET` / `PATCH` / `DELETE` / `PUT` / `POST` | `admin` | Products, ingredients, flagged queue, submissions (`x-admin-secret`) |
 
 Full URL pattern:
 
@@ -465,6 +465,17 @@ x-admin-secret: $ADMIN_SECRET
 
 There is **no** user JWT for these routes; access is gated by the shared secret configured for the Edge Function (`ADMIN_SECRET`). Do not expose this header from client apps—call from a trusted server or admin tool.
 
+**`resource` query values**
+
+| Resource | Methods | Notes |
+|----------|---------|--------|
+| `products` | `GET`, `PATCH`, `DELETE` | List barcode/name; edit/delete catalog products |
+| `ingredients` | `GET`, `POST`, `PATCH`, `DELETE` | Catalog list (score; `confidence` null); create/update/delete |
+| `flagged-ingredients` | `GET`, `PUT`, `POST` | List with Claude fields; `action=approve` → `ingredients`; `action=reject`; `action=sync-no-data` |
+| `submissions` | `GET`, `POST` | `action=approve` → `products`; `action=reject` |
+
+See [`06-admin.md`](./06-admin.md) for full request/response examples.
+
 ### 7.1 `GET` — list flagged ingredients
 
 ```bash
@@ -493,7 +504,7 @@ curl -sS "$SUPABASE_URL/functions/v1/admin?resource=flagged-ingredients" \
 ### 7.2 `PUT` — update flagged ingredient status
 
 **Query:** `resource=flagged-ingredients&id=<uuid>`  
-**Body:** `{ "status": "Pending" | "Reviewed" | "Resolved" }` (case-insensitive)
+**Body:** `{ "status": "Pending" | "Reviewed" | "Resolved" | "Rejected" }` (case-insensitive)
 
 ```bash
 curl -sS -X PUT "$SUPABASE_URL/functions/v1/admin?resource=flagged-ingredients&id=flag-uuid-1" \

@@ -1,6 +1,7 @@
 import type { ProductScoreResponse } from "../../types/api.ts";
 import { toIngredientDetails } from "../ingredients/repository.ts";
 import { listIngredientsForProduct } from "../ingredients/repository.ts";
+import { buildConcerns } from "../scoring/concerns.ts";
 import { computeProductScore } from "../scoring/engine.ts";
 import { ratingForScoreAsync } from "../scoring/rating.ts";
 import { findProductById, updateProductScore } from "./repository.ts";
@@ -34,6 +35,7 @@ export async function scoreProductById(
       rating,
     },
     ingredients: toIngredientDetails(ingredients),
+    concerns: buildConcerns(ingredients),
     summary: computation.summary,
   };
 }

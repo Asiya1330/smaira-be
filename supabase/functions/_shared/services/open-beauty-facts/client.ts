@@ -1,33 +1,13 @@
 import type { IngredientDetail } from "../../types/api.ts";
 import type { ProductRow } from "../../types/models.ts";
+import { mapObfProductToInsertRow, type ObfProductFields } from "./map-product.ts";
 
 /** Sentinel id for OBF-only products (not yet in `products`). */
 export const OBF_EPHEMERAL_PRODUCT_ID = "00000000-0000-0000-0000-000000000000";
 
 type ObfV2Response = {
   status: number;
-  product?: ObfV2Product;
-};
-
-type ObfV2Product = {
-  code?: string;
-  product_name?: string;
-  product_name_en?: string;
-  brands?: string;
-  categories?: string;
-  categories_hierarchy?: string[];
-  image_url?: string;
-  image_front_url?: string;
-  link?: string;
-  ingredients?: ObfIngredient[];
-  ingredients_text?: string;
-  labels?: string;
-  labels_tags?: string[];
-};
-
-type ObfIngredient = {
-  id?: string;
-  text?: string;
+  product?: ObfProductFields;
 };
 
 const BASE = "https://world.openbeautyfacts.org/api/v2/product";
@@ -45,90 +25,13 @@ export async function fetchObfByBarcode(
   const payload = (await res.json()) as ObfV2Response;
   if (payload.status !== 1 || !payload.product) return null;
   const p = payload.product;
-  const product = mapObfToProductRow(p, barcode);
+  const insertRow = mapObfProductToInsertRow(p, barcode);
+  const product: ProductRow = { id: OBF_EPHEMERAL_PRODUCT_ID, ...insertRow };
   const ingredients = mapObfIngredientsToDetails(p);
   return { product, ingredients };
 }
 
-function mapObfToProductRow(p: ObfV2Product, barcode: string): ProductRow {
-  const product_name = pickProductName(p, barcode);
-  const brand = pickBrand(p);
-  const category = pickCategory(p);
-  const image_url = p.image_front_url ?? p.image_url ?? null;
-  const source_url = (p.link?.trim() || obfProductPageUrl(barcode)) || null;
-
-  return {
-    id: OBF_EPHEMERAL_PRODUCT_ID,
-    barcode,
-    product_name,
-    brand,
-    category,
-    size_count: null,
-    absorbency: null,
-    ingredients_list: p.ingredients_text?.trim() ?? null,
-    material_composition: null,
-    bleaching_method: null,
-    synthetic_materials: null,
-    preservatives: null,
-    fragrance_type: null,
-    antibacterial_agents: null,
-    ph_level: null,
-    usda_organic: inferOrganic(p),
-    gots_certified: inferCertification(p, "gots"),
-    oeko_tex_certified: inferCertification(p, "oeko-tex"),
-    gyno_approved: inferCertification(p, "gynecologist-tested"),
-    image_url,
-    score: null,
-    source_url,
-    verified: false,
-  };
-}
-
-function pickProductName(p: ObfV2Product, barcode: string): string {
-  const n = (p.product_name_en ?? p.product_name ?? "").trim();
-  if (n) return n;
-  const cat = pickCategory(p);
-  if (cat) return cat;
-  return `Product ${barcode}`;
-}
-
-function pickBrand(p: ObfV2Product): string | null {
-  const raw = p.brands?.trim();
-  if (!raw) return null;
-  return raw.split(",")[0]?.trim() ?? null;
-}
-
-function pickCategory(p: ObfV2Product): string | null {
-  const first = p.categories?.split(",")[0]?.trim();
-  if (first) return first;
-  const h = p.categories_hierarchy;
-  if (h?.length) {
-    const leaf = h[h.length - 1];
-    return leaf.replace(/^..:/, "").replace(/-/g, " ");
-  }
-  return null;
-}
-
-function obfProductPageUrl(barcode: string): string {
-  return `https://world.openbeautyfacts.org/product/${encodeURIComponent(barcode)}`;
-}
-
-function inferOrganic(p: ObfV2Product): boolean | null {
-  const tags = p.labels_tags ?? [];
-  if (tags.some((t) => t.includes("organic") || t.includes("bio"))) return true;
-  return null;
-}
-
-function inferCertification(p: ObfV2Product, keyword: string): boolean | null {
-  const labels = p.labels?.toLowerCase() ?? "";
-  const tags = p.labels_tags ?? [];
-  if (labels.includes(keyword) || tags.some((t) => t.toLowerCase().includes(keyword))) {
-    return true;
-  }
-  return null;
-}
-
-function mapObfIngredientsToDetails(p: ObfV2Product): IngredientDetail[] {
+function mapObfIngredientsToDetails(p: ObfProductFields): IngredientDetail[] {
   const structured = p.ingredients;
   if (structured?.length) {
     return structured.map((ing) => {
@@ -138,7 +41,9 @@ function mapObfIngredientsToDetails(p: ObfV2Product): IngredientDetail[] {
         inci_name: label,
         classification: null,
         plain_english_summary: null,
+        short_description: null,
         impact_score: null,
+        point_contribution: null,
       };
     });
   }
@@ -146,6 +51,11 @@ function mapObfIngredientsToDetails(p: ObfV2Product): IngredientDetail[] {
   if (!text) return [];
   return splitIngredientsText(text);
 }
+
+type ObfIngredient = {
+  id?: string;
+  text?: string;
+};
 
 function ingredientLabel(ing: ObfIngredient): string {
   const t = ing.text?.trim();
@@ -168,6 +78,8 @@ function splitIngredientsText(raw: string): IngredientDetail[] {
     inci_name: label,
     classification: null,
     plain_english_summary: null,
+    short_description: null,
     impact_score: null,
+    point_contribution: null,
   }));
 }

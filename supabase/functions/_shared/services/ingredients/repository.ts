@@ -1,6 +1,8 @@
 import { getAdminClient } from "../../supabase/admin-client.ts";
 import type { IngredientRow } from "../../types/models.ts";
 import type { IngredientDetail } from "../../types/api.ts";
+import { isScoredIngredient, pointContribution } from "../scoring/engine.ts";
+import { parseImpactScoreToNumber } from "../scoring/impact-score.ts";
 
 /**
  * Loads ingredients for a product via `product_ingredients` → `ingredients`.
@@ -26,11 +28,21 @@ export async function listIngredientsForProduct(
 }
 
 export function toIngredientDetails(rows: IngredientRow[]): IngredientDetail[] {
-  return rows.map((r) => ({
-    ingredient_name: r.ingredient_name,
-    inci_name: r.inci_name,
-    classification: r.classification,
-    plain_english_summary: r.plain_english_summary,
-    impact_score: r.impact_score,
-  }));
+  const scoredCount = rows.filter(isScoredIngredient).length;
+  return rows.map((r) => {
+    const impact = isScoredIngredient(r)
+      ? parseImpactScoreToNumber(r.impact_score)
+      : null;
+    return {
+      ingredient_name: r.ingredient_name,
+      inci_name: r.inci_name,
+      classification: r.classification,
+      plain_english_summary: r.plain_english_summary,
+      short_description: r.short_description ?? null,
+      impact_score: r.impact_score,
+      point_contribution: impact === null
+        ? null
+        : pointContribution(impact, scoredCount),
+    };
+  });
 }

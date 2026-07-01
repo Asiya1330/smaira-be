@@ -37,6 +37,8 @@ export type IngredientRow = {
   impact_score: string | null;
   classification: IngredientClassification | null;
   plain_english_summary: string | null;
+  /** Short 2–4 word label for the ingredient (set by Claude scoring). */
+  short_description?: string | null;
   study_title?: string | null;
   pubmed_link?: string | null;
   year_published?: number | null;
@@ -84,6 +86,7 @@ export type ProductSubmissionRow = {
   submitted_at: string;
   status: "pending" | "approved" | "rejected";
   review_notes: string | null;
+  scan_count: number;
 };
 
 export type FlaggedIngredientRow = {
@@ -92,6 +95,11 @@ export type FlaggedIngredientRow = {
   product_ids: string[];
   ingredient_name: string | null;
   inci_name: string | null;
+  impact_score: string | null;
+  classification: IngredientClassification | null;
+  confidence: string | null;
+  brief_reasoning: string | null;
+  needs_human_review: boolean;
   flagged_at: string;
-  status: "Pending" | "Reviewed" | "Resolved";
+  status: "Pending" | "Reviewed" | "Resolved" | "Rejected";
 };

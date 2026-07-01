@@ -6,7 +6,9 @@
 | `products-score` | Load ingredients, run scoring algorithm, persist `products.score` |
 | `saved-products` | User JWT — list / save / delete saved products |
 | `product-submissions` | Authenticated product submission for review |
-| `admin` | Flagged ingredients (list/update + No Data sync to flagged), submissions, ingredient create/update (`x-admin-secret`) |
+| `admin` | Products & ingredients CRUD/list, flagged approve/reject → catalog, submissions approve/reject → products (`x-admin-secret`) |
+| `ingredients-score` | Claude batch ingredient scoring → `flagged_ingredients` (`x-admin-secret`, not in pipeline) |
+| `obf-catalog` | Fetch OBF products by category → `products`-shaped preview array (`x-admin-secret`, no DB write) |
 | `_shared` | HTTP helpers, env, Supabase clients, domain services |
 
 **Conventions**

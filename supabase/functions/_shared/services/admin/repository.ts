@@ -6,8 +6,7 @@ import type {
 } from "../../types/models.ts";
 import type { ProductRow } from "../../types/models.ts";
 import { isValidImpactScoreLabel } from "../scoring/impact-score.ts";
-import { insertProduct } from "../products/repository.ts";
-
+import { findProductById, insertProduct } from "../products/repository.ts";
 /** All non-id columns required on admin create (see docs/api/06-admin.md). */
 export type CreateIngredientInput = {
   ingredient_id?: string;
@@ -264,6 +263,7 @@ const FLAGGED_INGREDIENT_STATUSES = [
   "Pending",
   "Reviewed",
   "Resolved",
+  "Rejected",
 ] as const;
 
 function normalizeFlaggedIngredientStatus(raw: string): string {
@@ -272,6 +272,7 @@ function normalizeFlaggedIngredientStatus(raw: string): string {
     pending: "Pending",
     reviewed: "Reviewed",
     resolved: "Resolved",
+    rejected: "Rejected",
   };
   const normalized = byLower[key];
   if (!normalized) {
@@ -431,6 +432,12 @@ export async function updateSubmission(
   if (error) throw new Error(error.message);
 }
 
+export async function deleteSubmission(id: string): Promise<void> {
+  const supabase = getAdminClient();
+  const { error } = await supabase.from("product_submissions").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 /** README: approve → insert product + mark submission approved. */
 export async function approveSubmission(
   submissionId: string,
@@ -464,10 +471,7 @@ export async function approveSubmission(
     verified: false,
   });
 
-  await updateSubmission(submissionId, {
-    status: "approved",
-    review_notes: `Promoted to product id ${product.id}`,
-  });
+  await deleteSubmission(submissionId);
 
   return product;
 }
