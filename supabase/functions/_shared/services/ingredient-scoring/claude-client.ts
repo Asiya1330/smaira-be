@@ -6,6 +6,7 @@ import {
 import type {
   Classification,
   ClaudeIngredientScore,
+  ClaudeIngredientResult,
   ClaudeScoringInput,
   Confidence,
   ImpactScore,
@@ -183,8 +184,9 @@ function parseScoredIngredient(item: unknown): ClaudeIngredientScore {
   };
 }
 
-function parseScoredPayload(text: string): ClaudeIngredientScore[] {
+function parseScoredPayload(text: string): ClaudeIngredientResult[] {
   const jsonText = extractJsonText(text);
+  console.log("Claude Client jsonText", jsonText);
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonText);
@@ -209,7 +211,24 @@ function parseScoredPayload(text: string): ClaudeIngredientScore[] {
     throw new Error("Claude response must include at least one ingredient");
   }
 
-  return list.map(parseScoredIngredient);
+  return list.map((item) => {
+    const raw = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    const name = typeof raw.ingredient_name === "string"
+      ? raw.ingredient_name
+      : "unknown";
+    try {
+      const data = parseScoredIngredient(item);
+      return { success: true as const, ingredient_name: data.ingredient_name, data };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return {
+        success: false as const,
+        ingredient_name: name,
+        reason,
+        claude_response: raw,
+      };
+    }
+  });
 }
 
 const CLAUDE_MODEL_DOCS =
@@ -298,7 +317,7 @@ async function callAnthropicWithRetry(
  */
 export async function scoreIngredientsWithClaude(
   input: ClaudeScoringInput,
-): Promise<ClaudeIngredientScore[]> {
+): Promise<ClaudeIngredientResult[]> {
   const ingredients = input.ingredients.map((s) => s.trim()).filter(Boolean);
   if (ingredients.length === 0) {
     throw new Error("ingredients must be a non-empty array of strings");
@@ -339,13 +358,17 @@ export async function scoreIngredientsWithClaude(
 
   if (!text) throw new Error("Claude returned no text content");
 
-  const scored = parseScoredPayload(text);
-  if (scored.length !== ingredients.length) {
+  console.log("Claude Client text", text);
+
+  const results = parseScoredPayload(text);
+
+  console.log("Claude Client results", results);
+  if (results.length !== ingredients.length) {
     console.warn(
-      `Claude returned ${scored.length} ingredients; requested ${ingredients.length}`,
+      `Claude returned ${results.length} ingredients; requested ${ingredients.length}`,
     );
   }
-  return scored;
+  return results;
 }
 
 /** Alias matching the Probya integration guide naming. */

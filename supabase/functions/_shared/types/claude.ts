@@ -19,6 +19,23 @@ export type ClaudeIngredientScore = {
   pubmed_link: string | null;
 };
 
+export type ClaudeIngredientSuccess = {
+  success: true;
+  ingredient_name: string;
+  data: ClaudeIngredientScore;
+};
+
+export type ClaudeIngredientFailure = {
+  success: false;
+  ingredient_name: string;
+  reason: string;
+  claude_response: Record<string, unknown>;
+};
+
+export type ClaudeIngredientResult =
+  | ClaudeIngredientSuccess
+  | ClaudeIngredientFailure;
+
 export type ClaudeScoringInput = {
   ingredients: string[];
   productName?: string;

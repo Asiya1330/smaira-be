@@ -80,7 +80,8 @@ export type ScoreComputation = {
 };
 
 /** One Claude-scored ingredient (`ingredients-score` API). */
-export type ScoredIngredientResult = {
+export type ScoredIngredientSuccess = {
+  success: true;
   ingredient_name: string;
   inci_name: string;
   suggested_impact_score: "+2" | "+1" | "0" | "-1" | "-2" | "No Data";
@@ -92,9 +93,19 @@ export type ScoredIngredientResult = {
   short_description: string;
   pubmed_link: string | null;
   needs_human_review: boolean;
-  /** New `flagged_ingredients.id` when insert succeeded. */
   flagged_id: string | null;
 };
+
+export type ScoredIngredientFailure = {
+  success: false;
+  ingredient_name: string;
+  reason: string;
+  claude_response: Record<string, unknown>;
+};
+
+export type ScoredIngredientResult =
+  | ScoredIngredientSuccess
+  | ScoredIngredientFailure;
 
 export type IngredientsScoreResponse = {
   ingredients: ScoredIngredientResult[];
